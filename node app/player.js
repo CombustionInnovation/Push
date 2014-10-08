@@ -1,8 +1,11 @@
+var database = require("./database.js");
+
 var playa = function ()
 {
 	this.name;
 	this.email;
 	this.user_id;
+	this.username;
 	this.picture;
 	this.high_score;
 	this.best_time;
@@ -11,7 +14,7 @@ var playa = function ()
 	this.push_id;
 	this.current_game_id;
 	this.socket = new Object();
-
+	
 
 	this.joinGame = function(game_id)
 	{
@@ -54,6 +57,9 @@ var playa = function ()
 	
 	this.notifyGameScore = function(gameScoreObject,islast)
 	{
+	
+	var self = this;
+		console.log("updating score");
 		var position = 0;
 		if(islast)
 		{
@@ -63,14 +69,28 @@ var playa = function ()
 		var time = gameScoreObject.time;
 		var game_id = gameScoreObject.game_id;
 		var game_place  = position;
-	
-	
-	
+		var uid = self.user_id;
+		var game_type  = 2;
+		var db = new database.database();
+		db.setPlayer(self);
+		db.connectDataBase();
+		db.updateGame(game_id,uid,score,time,game_id,game_type,islast);
+		
 	}
 	
+	
+
+	this.notifyNewRank = function(rank)
+	{
+	var self = this;
+		if(self.is_in_game)
+		{
+			this.socket.emit("multi_rank",rank);
+		}
+	
+	}
 	
 
 
 }
 module.exports.playa = playa;
-

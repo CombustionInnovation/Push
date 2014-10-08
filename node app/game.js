@@ -5,6 +5,7 @@ var per = function()
 	this.user_id;
 	this.picture;
 	this.email;
+	this.username;
 }
 
 //inports index and player.
@@ -26,9 +27,9 @@ var game = function(){
 	this.io;
 	this.countDownToGameTimer = false;
 	this.gameWillStartTimer = false;
-	this.gamePlayersDuringGame=0;
+	this.gamePlayersDuringGame = 0;
 	this.countUpTimer =false;
-	this.ult;
+	this.ult = false;
 	this.current_game_score = 0;
 	this.current_game_interval_tick =0;
 	this.score_incrementer = 0;
@@ -38,16 +39,17 @@ var game = function(){
 	{
 
 	//if the amount of players is less than the maximum allotted players.
-		if(this.current_players_Array.length<this.max_players && this.gameIsOpen && !this.is_playing && !this.current_players[playa.user_id.toString()])
+		if(this.current_players_Array.length< this.max_players && this.gameIsOpen && !this.is_playing && !this.current_players[playa.user_id.toString()])
 		{
 			//creates a new per object and adds to graph.
 			
 			playa.is_in_game = true;
 			var d = new per();
-			d.name = playa.name
+			d.name = playa.name;
 			d.user_id = playa.user_id;
 			d.picture = playa.picture;
 			d.email = playa.email;
+			d.username = playa.name;
 			
 			//adds the current player object to the object
 			this.current_players[String(d.user_id)]= d;
@@ -59,25 +61,36 @@ var game = function(){
 			
 			
 			var self = this;
-			for(var i=0;i<this.current_players_Array.length;i++)
+			for(var i=0;i< this.current_players_Array.length;i++)
 			{
 				//gets the user id of all the players. if it does not match the new players id lets notify them of
 				//a new player
 				var id = self.current_players_Array[i]["user_id"];
 				var da = self.current_players_Array[i];
-				if(id!=d.user_id)
+				if(id != d.user_id)
 				{
 					console.log(id);
 					//send the notification to everyone
 				
 				}
 			}
-				//checks if we can start the lobby countdown and checks if we can close the game
-				self.checkGameCountdown();
-					self.checkIfClosed();
-					
+				
+				
+				
 					console.log("the game id is " + self.created); 
 					self.send_playerNotification(id,d);
+					
+				//checks if we can start the lobby countdown and checks if we can close the game
+					self.checkIfClosed();
+					
+					setTimeout(function(){
+						self.checkGameCountdown();
+					},500);
+					
+					
+					
+					return true;
+				
 		}
 		else
 		{
@@ -95,7 +108,7 @@ var game = function(){
 		var self = this;
 		console.log(id + "ashoud haCW sent");
 		//this sends a notification to all current players that a new player has joined the lobby
-		var p = index.index.playerPool[id];
+		//var p = index.index.playerPool[id];
 		index.index.io.to(self.created.toString()).emit('curr_players',d);
 	}
 
@@ -113,8 +126,8 @@ var game = function(){
 		//remove them from the player list && perform search for game again.
 		var self = this;
 		//deletes player by object id
-		var idGoodBye=0;
-		for(var i=0;i<self.current_players_Array.length;i++)
+		var idGoodBye = 0;
+		for(var i=0;i< self.current_players_Array.length;i++)
 		{
 
 			var id = self.current_players_Array[i]["user_id"];
@@ -126,8 +139,8 @@ var game = function(){
 			}
 			else
 			{
-			console.log("the player leaviing is "  + player_id);
-			console.log("player noti is " + id);
+				console.log("the player leaviing is "  + player_id);
+				console.log("player noti is " + id);
 				//send a notification to the others that the player has left
 				self.sendPlayerLeftNotification(id,player_id);
 			}
@@ -135,10 +148,10 @@ var game = function(){
 		}
 		//wait until the loop is over before splicing other wise it stops our loop and we wont be able to notify everyone
 		self.current_players_Array.splice(idGoodBye,1);
-		var pid =  self.current_players[player_id];
+		var pid = self.current_players[player_id];
 		if(pid)
 		{
-			delete pid;
+			delete self.current_players[player_id];
 		}
 	
 		//makes the game open
@@ -147,15 +160,13 @@ var game = function(){
 		if(this.current_players_Array.length == 0)
 		{
 			self.gameIsNowOver();
-			
 			self.gameIsOpen = false;
-			
 		}
 		
 		//check if the countdown timer can start. 
 		//check if the maximum number of players are in the room
 
-		this.playerHasLeft();
+		 this.playerHasLeft();
 	}
 	
 	//player left noticiation to all players to remove them crmo the lobby UI
@@ -240,7 +251,7 @@ var game = function(){
 	this.CountDownToGameHasTicked = function(timeleft)
 	{
 			var self = this;
-			console.log(timeleft);
+	//		console.log(timeleft);
 	
 			index.index.io.to(self.created.toString()).emit('lobby_timer_ticked',timeleft);
 	
@@ -339,7 +350,7 @@ var game = function(){
 	{
 		var upT = this.countUpTimer;
 		var self =  this;
-		if(!upT)
+		if(!this.countUpTimer)
 		{
 			self.countUpTimer = new countUpTimer();
 			self.countUpTimer.game = self;
@@ -348,9 +359,12 @@ var game = function(){
 			//creates new shake ultimatum.
 			self.ult = new ultimatum();
 			self.ult.game = this;
-			self.ult.players = self.current_players_Array;
-	
+			for(var i = 0;i < self.current_players_Array.length;i++)
+			{
+				self.ult.players.push(self.current_players_Array[i]);
+			}
 			self.ult.setNextChoice();
+			console.log("cometopass");
 		}
 	
 	}
@@ -382,7 +396,7 @@ var game = function(){
 		}
 		
 		
-		console.log("TICK");
+		//console.log("TICK");
 		index.index.io.to(self.created.toString()).emit('upTimerClicked',timeObj);
 	}
 	//starts the ultimatum
@@ -400,8 +414,14 @@ var game = function(){
 		if(self.ult)
 		{
 			self.ult.playerMetRequirements(player_id);
+			console.log(player_id + " that was the player");
 		
 		}
+		else
+		{
+			console.log("Fuck u");
+		}
+	
 	
 	}
 	
@@ -585,9 +605,10 @@ var game = function(){
 		}
 		if(self.ult)
 		{
-			    clearTimeout(self.setTimeoutToCounter);
-				clearImmediate(self.setTImeoutCounter);
-				self.ult.ultimatumFailed();
+			clearTimeout(self.setTimeoutToCounter);
+			clearImmediate(self.setTImeoutCounter);
+			self.ult.ultimatumFailed();
+			
 			if(self.ult.pt)
 			{
 				if(self.ult.pt.interval)
@@ -601,8 +622,6 @@ var game = function(){
 		}
 		index.index.currentGames[self.created.toString()] = null;
 		delete index.index.currentGames[self.created.toString()];
-		
-
 
 	}
 	
@@ -615,7 +634,7 @@ var prettyGameTimer = function()
     this.delegate;
     this.interval;
     this.numberOfMillis = 10000;
-	this.game;
+    this.game;
 
     this.setTimeAmount = function(numberInMillis)
     {
@@ -683,7 +702,7 @@ var prettyTimer = function()
     this.timeToPlayWith = 0;
     this.delegate;
     this.interval;
-    this.numberOfMillis = 14500;
+    this.numberOfMillis = 3000;
 	this.game;
 
     this.setTimeAmount = function(numberInMillis)
@@ -778,7 +797,7 @@ var countUpTimer = function(){
 	//increments time upward every 100th of a second so the timer doesnt seem so slow.
 	this.setTime = function(self){
 		++self.totalSeconds;
-        ++self.msms;
+      		  ++self.msms;
 
 			if(self.totalSeconds == self.incrementer * 10)
 			 {
@@ -885,11 +904,11 @@ var countUpTimer = function(){
 
 			this.clearMe(this);
          setTimeout(function(){
-			self.minutesLabel.innerHTML ="00:";
+	     self.minutesLabel.innerHTML ="00:";
              self.secondsLabel.innerHTML = "00:";
              self.hoursLabel.innerHTML ="00:";
              self.milliseconds.innerHTML="00";
-         },500);
+         },750);
 	 };
 	 
 	 
@@ -912,19 +931,19 @@ var countUpTimer = function(){
 var ultimatum = function()
 {
    // this.timeChoices = [23000,33300,30000,73220,600000,300000,900000,50000];
-   this.timeChoices = [2000,2000,2000,2000,2000,2000,2000,2000];
+    this.timeChoices = [50000,50000,50000,50000,50000,50000,50000,50000];
     this.nextChoice = 0;
     this.setTimeOutToCounter = null;
-	this.game;
-    this.pt = new ultimatumPrettyTimer();
-	this.players = new Array();
-    //  this.pauseTimer = this.pt.pauseCountDown();
+    this.game;
+    this.pt = new ultimatumPrettyTimer(); 
+    this.players = new Array();
+   
 
 
 
     this.setNextChoice = function()
     {
-		this.pt.ult = this;
+	this.pt.ult = this;
         var number = Math.floor(Math.random() * 6) + 0;
         this.nextChoice = this.timeChoices[number];
         this.setTimeoutUntilUltimatiumStarts();
@@ -935,7 +954,6 @@ var ultimatum = function()
     {
         var self = this;
         this.setTimeoutToCounter = setTimeout(self.startUltimatum,self.nextChoice,self);
-
         console.log(this.nextChoice);
 
     }
@@ -951,17 +969,16 @@ var ultimatum = function()
     }
 	
 	
-	this.updatePlayerList = function()
-	{
+    this.updatePlayerList = function()
+    {
 	
-	}
+	
+    }
 
     this.startUltimatum = function(self)
     {
-      
         self.pt.startCountDown();
-		self.game.UltimatiumWillStart();
-//#E4CDCA
+	self.game.UltimatiumWillStart();
     }
 
     this.ultimatumWasMet = function()
@@ -972,6 +989,7 @@ var ultimatum = function()
         self.pt.pauseCountDown();
         self.cancelUltimatum(self);
         self.pt.setTimeAmount(45000);
+        self.players = self.game.current_players_Array;
         self.setNextChoice();
     }
 
@@ -1011,7 +1029,7 @@ var ultimatum = function()
     {
 		var self = this;
 		console.log("polayers is " + self.players.length);
-		self.ultimatumWasMet();
+		
 		for(var i=0;i<self.players.length;i++)
 			{
 				//gets the user id of all the players. if it does not match the new players id lets notify them of
@@ -1020,30 +1038,38 @@ var ultimatum = function()
 				self.game.playersToDestroy(id);
 				console.log("the id");
 			}
+			
+			
+			self.ultimatumWasMet();
     }
 	
 	
 	//playerhas shook phone
 	 this.playerMetRequirements = function(player_id)
 	 {
+	 console.log("will run");
 	 var self = this;
-	 	for(var i=0;i<self.players;i++)
+	 	for(var i=0;i<self.players.length;i++)
 			{
 				//gets the user id of all the players. if it does not match the new players id lets notify them of
 				//a new player
 				var id = self.players[i]["user_id"];
 			
-				if(id==player_id)
+				if(id == player_id)
 				{
 					self.players.splice(i,1);
-				
+					console.log("the splice id" + i);
 				
 				}
+				
+				console.log(id);
+				console.log(player_id);
 			}
 			
 			if(self.players.length == 0)
 			{
 				self.ultimatumWasMet();
+				console.log("No players left");
 				
 			}
 		
@@ -1059,7 +1085,7 @@ var ultimatumPrettyTimer = function()
     this.delegate;
     this.interval;
     this.numberOfMillis = 45000;
-	this.ult;
+    this.ult;
 
     this.setTimeAmount = function(numberInMillis)
     {
@@ -1090,7 +1116,7 @@ var ultimatumPrettyTimer = function()
         console.log(self.numberOfMillis);
 
 		self.ult.timerHasTicked(self.addZeros(self.numberOfMillis/1000)+"s");
-       // $("#ultimatum_div").html("Keep it up!<br>Shake within <span class='bright_red'> 0:"+</span></br>to keep going");
+     
         if(self.numberOfMillis < 1)
         {
             self.timerHasEnded();
@@ -1117,7 +1143,6 @@ var ultimatumPrettyTimer = function()
     {
 		var self = this;
 		self.ult.timerHasEnded();
-
     }
 
 
@@ -1125,9 +1150,3 @@ var ultimatumPrettyTimer = function()
 }
 
 module.exports.game = game;
-
-
-
-
-
-

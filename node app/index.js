@@ -1,5 +1,5 @@
-var app = require('express')();
-var http = require('http').Server(app);
+//var app = require('express')();
+//var http = require('http').Server(app);
 
 
 
@@ -12,16 +12,17 @@ var game = require("./game.js");
 var index ={};
 	index.currentGames = [];
 	index.playerPool = [];
-	index.io  = require('socket.io')(http);
+	index.io  = require('socket.io').listen(3000);
 	index.ss = require('socket.io-stream');
 	index.path = require('path'); 
 	index.wav = require('wav');
 	index.fs = require("fs");
+	index.mysql = require('mysql');
 	
 	
-app.get('/', function(req, res){
-  res.sendfile('play.html');
-});
+//app.get('/', function(req, res){
+ // res.sendfile('play.html');
+//}//;
 
 
 
@@ -30,7 +31,13 @@ index.io.on('connection', function(socket){
 //io.setMaxListeners(0);
 
   socket.on('chat message', function(msg){
-   index.io.emit('chat message', msg);
+  console.log("#");
+  	//socket.emit("D","DD");
+  	socket.join("D");
+  	index.io.to("D").emit('lobby_timer_started',"ww");
+       // index.io.emit('chat message', msg);
+      //   index.io.emit('ooo', "CC");
+         
   });
   
    
@@ -51,13 +58,17 @@ index.io.on('close', function() {
   });
   
   //when a user connects, I want them to send me all their user information so I can create a new player object. 
-  socket.on("user_information",function(info){
+  socket.on("user_information",function(inf){
+ 
+  var info = JSON.parse(inf);
+  console.log(info.user_id);
+  console.log(info);
 		//when the user sends me their user information lets create a new object. 
 		var isPlayerHere = 	checkIfPlayerExistsInMap(info.user_id);
 		if(isPlayerHere)
 		{
 			socket.emit("boot","");
-		//	bootOtherPlayer(info.user_id);
+			bootOtherPlayer(info.user_id);
 		}
 		
 			//create new player
@@ -75,8 +86,11 @@ index.io.on('close', function() {
 	});
 
 //when the client sends the "search game" command 
- socket.on("search_game",function(info)
+ socket.on("search_game",function(inf)
   {
+  
+  var info = JSON.parse(inf);
+  console.log(info);
   
   function goToGame()
   {
@@ -110,7 +124,7 @@ index.io.on('close', function() {
 			{	
 				p.current_game_id = my_game_id;
 				socket.join(String(my_game_id));
-				socket.emit("game_entered",g.created);
+				socket.emit("game_entered",my_game_id);
 			}
 			else
 			{
@@ -137,23 +151,32 @@ index.io.on('close', function() {
 	
 socket.on("get_game_info",function(game_id)	
 {
+	console.log("your game is" + game_id);
 	//index.io.to(String(game_id)).emit('player_died',"D");
 	//the client has connected to the game so now we want to get a list of all the current players in the game.
 	//to populate the lobby
 	var g = index.currentGames[String(game_id)];
-	var curr_players = g.getCurrentPlayers();
-	socket.emit("other_players",curr_players);
-	});
+	if(g)
+	{
+		var curr_players = g.getCurrentPlayers();
+		socket.emit("other_players",curr_players);
+	}
+	else
+	{
+		socket.emit("no_game_exists","");
+	}
+});
 	
 
 	
 //when user wants to leave game
-socket.on("leave_game",function(game_information)
+socket.on("leave_game",function(gid)
 {
+        var game_information = JSON.parse(gid);
 	var user_id = game_information.user_id;
 	var game_id = game_information.game_id;
 	var p = index.playerPool[String(user_id)];
-	var g_id = p.current_game_id;
+	//var g_id = p.current_game_id;
 	var g = index.currentGames[String(game_id)];
 	if(g)
 	{
@@ -167,29 +190,49 @@ socket.on("leave_game",function(game_information)
 });
 	
 //game is in motion and the player has now lost.
-socket.on("u_lose",function(game_information)
+socket.on("u_lose",function(gid)
 {
-	var user_id = game_information.user_id;
-	var game_id = game_information.game_id;
-	var p = index.playerPool[String(user_id)];
-	var g_id = p.current_game_id;
-	var g = index.currentGames[String(game_id)];
-	if(g)
-	{
-		g.diePlayer(user_id);
-	}
-	socket.leave(String(game_id));
-	p.leaveGame();
+	var game_information = JSON.parse(gid);
 	
+	console.log(game_information);
+	
+	var user_id = game_information.user_id.trim();
+	var game_id = game_information.game_id.trim();
+	console.log("the game id is to lose is  " + game_id);
+	var p = index.playerPool[String(user_id)];
+	if(p)
+	{
+		var g_id = p.current_game_id;
+		var g = index.currentGames[String(game_id)];
+		if(g)
+		{	
+			g.diePlayer(user_id);
+			console.log("killin em");
+		}
+			socket.leave(String(game_id));
+		
+			p.leaveGame();
+		
+	}
 
 });
-socket.on("utlimatum_done",function(game_information)
+socket.on("utlimatum_done",function(gid)
 {
+	var game_information = JSON.parse(gid);
+	console.log(game_information);
 	socket.emit("ultimatum_met","");
 	var user_id = game_information.user_id;
 	var game_id = game_information.game_id;
 	var g = index.currentGames[String(game_id)];
-	g.meetUltimatum(user_id);
+	if(g)
+	{
+		g.meetUltimatum(user_id);
+		console.log("@user did this");
+	}
+	else
+	{
+	     socket.emit("force_game_over","no shake");
+	}
 });
 	
 	
@@ -234,9 +277,9 @@ function getOpenGame()
 }
 
 
-http.listen(3000, function(){
-  console.log('listening on *:3000');
-});
+//http.listen(3000, function(){
+//  console.log('listening on *:3000');
+//});
 
 
 
@@ -275,7 +318,7 @@ function checkIfPlayerExistsInMap(user_id)
 			{
 				var g_id = isPlayerHere.current_game_id;
 				if(gameExists(g_id))
-				{
+				{ 
 					var g = index.currentGames[String(g_id)];
 					if(g.is_playing)
 					{
@@ -316,3 +359,32 @@ function gameExists(game_id)
 
 }
 
+
+function bootOtherPlayer(user_id)
+{
+	var p = index.playerPool[String(user_id)];
+ 	if(p)
+ 	{
+ 		 var g_id = p.current_game_id;
+ 		 if(g_id)
+ 		 {
+ 		 	var g = index.currentGames[String(g_id)];
+ 		 	if(g)
+ 		 	{
+ 		 		if(g.is_playing)
+ 		 		{
+ 		 			g.diePlayer(user_id);
+ 		 		}
+ 		 		else
+ 		 		{
+ 		 			g.removePlayer(user_id);
+ 		 		}
+ 		 	}
+ 		 
+ 		 }
+ 	
+ 	}
+ 
+
+
+}
