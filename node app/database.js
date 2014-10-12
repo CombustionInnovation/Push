@@ -7,9 +7,9 @@ var gameUpdate = new database();
 gameUpdate.connectDatabase();
 gameUpdate.updateGame(player_id,game_id);
 */
-
-
-var database = function(){
+ 
+//db 
+var database = function(){ 
 
    this.mysql = index.index.mysql;
    this.connection = false;
