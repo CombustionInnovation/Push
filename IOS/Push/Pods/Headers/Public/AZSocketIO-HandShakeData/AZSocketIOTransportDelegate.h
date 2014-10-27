@@ -1,0 +1,1 @@
+../../../AZSocketIO-HandShakeData/AZSocketIO/Protocols/AZSocketIOTransportDelegate.h

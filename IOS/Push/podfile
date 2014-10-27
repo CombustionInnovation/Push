@@ -1,0 +1,12 @@
+platform :ios, '7.0'
+pod 'AFNetworking', '~> 2.0'
+pod 'MBProgressHUD', '~> 0.8'
+pod 'STTweetLabel'
+pod 'UIActivityIndicator-for-SDWebImage'
+pod 'Facebook-iOS-SDK', '~>3.15.1'
+pod 'STTwitter'
+pod 'RFRateMe', '~> 1.0.0'
+pod 'AZSocketIO-HandShakeData', '~> 0.0'
+pod 'GoogleAnalytics-iOS-SDK', '3.0.3c'
+
+pod 'SIOSocket', '~> 0.2.0'

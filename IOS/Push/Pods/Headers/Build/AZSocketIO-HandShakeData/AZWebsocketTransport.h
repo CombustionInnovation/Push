@@ -1,0 +1,1 @@
+../../../AZSocketIO-HandShakeData/AZSocketIO/Transports/AZWebsocketTransport.h
